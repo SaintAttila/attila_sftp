@@ -268,7 +268,7 @@ class sftp_connection(fs_connection):
     def getcwd(self):
         """Get the current working directory of this SFTP connection."""
         if self.is_open:
-            super().chdir(self._session.getcwd())
+            super().chdir(self._session.getcwd() or '/')
             return super().getcwd()
 
         return super().getcwd()

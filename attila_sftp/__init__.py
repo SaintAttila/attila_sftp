@@ -21,7 +21,7 @@ from attila.fs.proxies import ProxyFile
 
 __author__ = 'Aaron Hosford'
 __author_email__ = 'aaron.hosford@ericsson.com'
-__version__ = '0.0'
+__version__ = '0.0.1'
 __url__ = 'https://scmgr.eams.ericsson.net/PythonLibs/attila_sftp'
 __description__ = 'Paramiko-based Attila Plugin for SFTP support'
 __license__ = 'MIT'

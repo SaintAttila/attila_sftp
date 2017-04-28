@@ -21,7 +21,7 @@ from attila.fs.proxies import ProxyFile
 
 __author__ = 'Aaron Hosford'
 __author_email__ = 'aaron.hosford@ericsson.com'
-__version__ = '0.0.1'
+__version__ = '0.0.2'
 __url__ = 'https://scmgr.eams.ericsson.net/PythonLibs/attila_sftp'
 __description__ = 'Paramiko-based Attila Plugin for SFTP support'
 __license__ = 'MIT'
@@ -257,7 +257,7 @@ class sftp_connection(fs_connection):
 
     def close(self):
         """Close the SFTP connection"""
-        assert self.is_open
+        assert self._is_open
 
         try:
             self._session.close()

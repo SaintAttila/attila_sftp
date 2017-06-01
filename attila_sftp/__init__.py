@@ -12,7 +12,7 @@ import paramiko
 
 from attila.configurations import ConfigManager
 from attila.abc.files import FSConnector, Path, fs_connection
-from attila.exceptions import verify_type
+from attila.exceptions import verify_type, DirectoryNotEmptyError
 from attila.security import credentials
 from attila import strings
 from attila.fs import local, ftp
@@ -291,7 +291,12 @@ class sftp_connection(fs_connection):
 
     def _upload(self, local_path, remote_path):
         assert self.is_open
+
+        if isinstance(local_path, Path):
+            assert isinstance(local_path.connection, local.local_fs_connection)
+            local_path = str(local_path)
         assert isinstance(local_path, str)
+
         remote_path = self.check_path(remote_path)
 
         dir_path, file_name = os.path.split(remote_path)
@@ -391,9 +396,69 @@ class sftp_connection(fs_connection):
         assert self.is_open
         path = self.check_path(path)
 
-        dir_path, file_name = os.path.split(path)
-        with Path(dir_path, self):
-            self._session.remove(file_name)
+        if self.is_dir(path):
+            dir_path, dir_name = os.path.split(path)
+            with Path(dir_path, self):
+                self._session.rmdir(dir_name)
+        else:
+            dir_path, file_name = os.path.split(path)
+            with Path(dir_path, self):
+                self._session.remove(file_name)
+
+    def make_dir(self, path, overwrite=False, clear=False, fill=True, check_only=None):
+        """
+        Create a directory at this location.
+
+        :param path: The path to operate on.
+        :param overwrite: Whether existing files/folders that conflict with this function are to be
+            deleted/overwritten.
+        :param clear: Whether the directory at this location must be empty for the function to be
+            satisfied.
+        :param fill: Whether the necessary parent folder(s) are to be created if the do not exist
+            already.
+        :param check_only: Whether the function should only check if it's possible, or actually
+            perform the operation.
+        :return: None
+        """
+        path = self.check_path(path)
+
+        if check_only is None:
+            # First check to see if it can be done before we actually make any changes. This doesn't
+            # make the whole thing perfectly atomic, but it eliminates most cases where we start to
+            # do things and then find out we shouldn't have.
+            self.make_dir(path, overwrite, clear, fill, check_only=True)
+
+            # If we don't do this, we'll do a redundant check first on each step in the recursion.
+            check_only = False
+
+        if self.is_dir(path):
+            if clear:
+                children = self.glob(path)
+                if children:
+                    if not overwrite:
+                        raise DirectoryNotEmptyError(path)
+                    if not check_only:
+                        for child in children:
+                            child.remove()
+        elif self.exists(path):
+            # It's not a folder, and it's in our way.
+            if not overwrite:
+                raise FileExistsError(path)
+            if not check_only:
+                self.remove(path)
+                self._session.mkdir(path)
+        else:
+            # The path doesn't exist yet, so we need to create it.
+
+            # First ensure the parent folder exists.
+            if not self.dir(path).is_dir:
+                if not fill:
+                    raise NotADirectoryError(self.dir(path))
+                self.dir(path).make_dir(overwrite, clear=False, fill=True, check_only=check_only)
+
+            # Then create the target folder.
+            if not check_only:
+                self._session.mkdir(path)
 
     def rename(self, path, new_name):
         """

@@ -26,7 +26,7 @@ __url__ = 'https://scmgr.eams.ericsson.net/PythonLibs/attila_sftp'
 __description__ = 'Paramiko-based Attila Plugin for SFTP support'
 __license__ = 'MIT'
 __long_description__ = __doc__
-__install_requires__ = ['attila>=1.9.3', 'paramiko>=2.1.2']
+__install_requires__ = ['attila>=1.10.2', 'paramiko>=2.1.2']
 
 # This tells Attila how to find our plugins.
 __entry_points__ = {
